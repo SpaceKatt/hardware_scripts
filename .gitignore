@@ -170,3 +170,5 @@ Session.vim
 # Auto-generated tag files
 tags
 
+# Folder for junk
+null/
