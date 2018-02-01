@@ -57,20 +57,31 @@ class BooleanExpr(object):
 
     def __init__(self, exp):
         '''Initialize all values'''
+        # Reset some stuff
         self.var_set.clear()
-        self.disp_exp = exp
-        self.orig_exp = "".join(exp.split())
-        # Get rid of double negatation
-        self.orig_exp = self.orig_exp.replace('!!', '')
-        self.orig_exp = self.orig_exp.replace('~~', '')
-        self.orig_exp = self.orig_exp.replace('~!', '')
-        self.orig_exp = self.orig_exp.replace('!~', '')
         self.op_stack[:] = []
         self.var_stack[:] = []
         self.error = False
         self.error_msg = ""
+
+        # Process boolean expression, save original
+        self.disp_exp = exp
+        # Get rid of whitespace
+        self.orig_exp = "".join(exp.split())
+        self.get_rid_of_double_negation()
         # Create post-fix expression
         self.process_exp(self.orig_exp)
+
+    def get_rid_of_double_negation(self):
+        '''
+        Remove any two adjacent negation operators. The function
+        name really says it all.
+        '''
+        self.orig_exp = self.orig_exp.replace('!!', '')
+        self.orig_exp = self.orig_exp.replace('~~', '')
+        self.orig_exp = self.orig_exp.replace('~!', '')
+        self.orig_exp = self.orig_exp.replace('!~', '')
+
 
     ######################################################################
     ####### Parse in-fix expression into post-fix ########################
@@ -83,10 +94,11 @@ class BooleanExpr(object):
         is easier to evaluate in code and makes creating the truth
         table more efficient.
         """
+        # TODO: Split up branching into functions
         self.post_exp = ""
         # Step through chars of booelean expression
         for char in exp:
-            if self.error == True:
+            if self.error:
                 return
             if char == ' ':
                 continue
@@ -101,9 +113,9 @@ class BooleanExpr(object):
             # End parens
             elif char == ')':
                 # Process all operators until start paren
-                while self.get_top(self.op_stack) != '(':
+                while get_top(self.op_stack) != '(':
                     self.process_an_op()
-                    if self.get_top(self.op_stack) == -1:
+                    if get_top(self.op_stack) == -1:
                         self.error = True
                         self.error_msg = "Unbalanced paren: )"
                         return
@@ -117,11 +129,11 @@ class BooleanExpr(object):
                 # we have found an invalid char
                 self.error = True
                 self.error_msg = "{} is not a valid symbol!".format(char)
-        if self.error == True:
+        if self.error:
             return
         # Process remaining operators
-        while self.op_stack and len(self.var_stack) > 0:
-            if self.get_top(self.op_stack) == '(':
+        while self.op_stack and self.var_stack:
+            if get_top(self.op_stack) == '(':
                 self.error = True
                 self.error_msg = "Unbalanced paren: ("
             self.process_an_op()
@@ -136,27 +148,20 @@ class BooleanExpr(object):
         prec = self.prec_dict[char]
         # Process all operators with higher precedence
         # (high precedence is indicated with a lower number, sorry)
-        while prec >= self.prec_dict[self.get_top(self.op_stack)]:
+        while prec >= self.prec_dict[get_top(self.op_stack)]:
             self.process_an_op()
         self.op_stack.append(char)
 
-    def get_top(self, arr):
-        '''
-        If there are elements in the stack, return the top of the stack,
-        else return -1 to signify that the stack is empty
-        '''
-        if not arr:
-            return -1
-        return arr[-1]
-
     def process_an_op(self):
+        '''
+        '''
         # I don't know if this would happen...
         if not self.op_stack:
             self.error = True
             self.error_msg = "Op stack is empty while trying to process op"
             return
         # Add operator to postfix expression
-        temp = self.get_top(self.op_stack)
+        temp = get_top(self.op_stack)
         self.op_stack.pop()
         self.post_exp += temp
         # If the operator is unary, then there will be no change in var_stack
@@ -182,26 +187,26 @@ class BooleanExpr(object):
         '''
         self.result_formatted = ""
         # Get all variables, sort them to ensure consistent tables between runs
-        vars = []
+        var_list = []
         for elem in self.var_set:
-            vars.append(elem)
-        vars.sort()
+            var_list.append(elem)
+        var_list.sort()
         var_num = 0
         # This dictionary will keep track of the value of each variable
         var_dict = {}
-        self.format_header(vars)
+        self.format_header(var_list)
 
         # Begin recursion
-        var_dict[vars[var_num]] = False
-        self.recurse_through_var(vars, var_dict, var_num + 1)
-        var_dict[vars[var_num]] = True
-        self.recurse_through_var(vars, var_dict, var_num + 1)
+        var_dict[var_list[var_num]] = False
+        self.recurse_through_var(var_list, var_dict, var_num + 1)
+        var_dict[var_list[var_num]] = True
+        self.recurse_through_var(var_list, var_dict, var_num + 1)
 
         # Add bottom line of formatted result
-        self.result_formatted += "+" + "---+" * len(vars)
+        self.result_formatted += "+" + "---+" * len(var_list)
         self.result_formatted += "-" * len(self.disp_exp) + "--+\n"
 
-    def recurse_through_var(self, vars, var_dict, depth):
+    def recurse_through_var(self, var_list, var_dict, depth):
         '''
         Recurse until every variable has been set to True or False, then
         once the recursion depth is equal to the number of variables
@@ -210,15 +215,15 @@ class BooleanExpr(object):
         '''
         if depth >= len(self.var_set):
             # Process expression for a single permutation of input
-            self.process_single_exp(var_dict, vars)
+            self.process_single_exp(var_dict, var_list)
         else:
             # Continue recursion
-            var_dict[vars[depth]] = False
-            self.recurse_through_var(vars, var_dict, depth + 1)
-            var_dict[vars[depth]] = True
-            self.recurse_through_var(vars, var_dict, depth + 1)
+            var_dict[var_list[depth]] = False
+            self.recurse_through_var(var_list, var_dict, depth + 1)
+            var_dict[var_list[depth]] = True
+            self.recurse_through_var(var_list, var_dict, depth + 1)
 
-    def process_single_exp(self, dict_bool, vars):
+    def process_single_exp(self, dict_bool, var_list):
         '''
         Processes a post-fix expression with the values of each variable
         stroed in `dict_bool`.
@@ -249,21 +254,21 @@ class BooleanExpr(object):
                     result = bool(one) ^ bool(two)
                     post_stack.append(result)
         # Save result in a formatted fashion, will be single line in table
-        self.format_result(post_stack.pop(), dict_bool, vars)
+        self.format_result(post_stack.pop(), dict_bool, var_list)
 
-    def format_header(self, vars):
+    def format_header(self, var_list):
         '''Creates the header to the truth table'''
-        self.result_formatted += "+" + "---+" * len(vars)
+        self.result_formatted += "+" + "---+" * len(var_list)
         self.result_formatted += "-" * len(self.disp_exp) + "--+\n"
-        for var in vars:
+        for var in var_list:
             self.result_formatted += "| {} ".format(var)
         self.result_formatted += "| {} |\n".format(self.disp_exp)
-        self.result_formatted += "+---" * len(vars)
+        self.result_formatted += "+---" * len(var_list)
         self.result_formatted += "+" + "-" * len(self.disp_exp) + "--+\n"
 
-    def format_result(self, result, dict_bool, vars):
+    def format_result(self, result, dict_bool, var_list):
         '''Creates single line in the truth table'''
-        for var in vars:
+        for var in var_list:
             booly = int(dict_bool[var])
             self.result_formatted += "| {} ".format(booly)
         res = int(result)
@@ -296,7 +301,7 @@ class BooleanExpr(object):
             self.error_msg = "Cannot have two variables in a row..."
         if not self.valid_negation():
             self.error = True
-        if self.error == True:
+        if self.error:
             return "The expression: {}, is invalid!\n{}".format(self.disp_exp,
                                                                 self.error_msg)
         if len(set(self.var_set)) > 5:
@@ -308,68 +313,77 @@ class BooleanExpr(object):
         self.process_all_exps()
         return self.result_formatted
 
+def get_top(arr):
+    '''
+    If there are elements in the stack, return the top of the stack,
+    else return -1 to signify that the stack is empty
+    '''
+    if not arr:
+        return -1
+    return arr[-1]
+
 # Run some basic tests
 if __name__ == '__main__':
-    exp = "A+C"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A+C"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "A*C"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A*C"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "A^C+!(A * C)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A^C+!(A * C)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "A+!B*C+!A*C*!D"
-    exp_obj_2 = BooleanExpr(exp)
-    print(exp_obj_2.get_truth_table())
+    EXP = "A+!B*C+!A*C*!D"
+    EXP_OBJ_2 = BooleanExpr(EXP)
+    print(EXP_OBJ_2.get_truth_table())
 
-    exp = "A^C++!(A * C)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A^C++!(A * C)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "A^C+!((A * C)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A^C+!((A * C)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "A^C)++!(A * C))"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A^C)++!(A * C))"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "A^C++!(A * C))"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "A^C++!(A * C))"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "ABCD"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "ABCD"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "!(x + y)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "!(x + y)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "(x!y + y)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "(x!y + y)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "(x + y)!"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "(x + y)!"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "(!!x + y)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "(!!x + y)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "(!+!x + y)"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "(!+!x + y)"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "!(!(!x + y))"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "!(!(!x + y))"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
 
-    exp = "!   !   !x + y"
-    exp_obj = BooleanExpr(exp)
-    print(exp_obj.get_truth_table())
+    EXP = "!   !   !x + y"
+    EXP_OBJ = BooleanExpr(EXP)
+    print(EXP_OBJ.get_truth_table())
