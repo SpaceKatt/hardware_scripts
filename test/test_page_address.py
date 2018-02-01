@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -------------------------------------------------------------------------------
 '''
 
-from ..scripts.page_address_calc import AddressParser as ap
+from ..src.page_address_calc import AddressParser as ap
 
 def test_page_0():
     '''a'''

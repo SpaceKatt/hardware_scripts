@@ -46,7 +46,7 @@ class AddressParser(object):
     byte_bits = 0
     # The number of bits in our address
     total_bits = 0
-    # The length of the hex address
+    # The length of the absolute hex address for our memory chip
     hex_length = 0
 
     def __init__(self, page, offset, byte_sel):
@@ -106,6 +106,7 @@ class AddressParser(object):
         page = "{0:b}".format(page_num)
         # Get the offset and byte-selector bits
         offset_byte_sel = self.get_ending(is_start)
+
         address = page + offset_byte_sel
         # Return the absolute hex address
         return self.to_hex(address)
@@ -119,7 +120,7 @@ class AddressParser(object):
 
     def get_start_end(self, page_num):
         '''
-        Retruns the starting and ending address of a page.
+        Returns the starting and ending address of a page.
         '''
         if not self.is_valid_page(page_num):
             return "Invalid page number"
@@ -146,9 +147,6 @@ class AddressParser(object):
         result += "Start: " + page_addresses[0] + '\n'
         result += "End:   " + page_addresses[1]
         return result
-
-
-print(__name__)
 
 if __name__ == '__main__':
     ADDRE = AddressParser(4, 13, 0)
@@ -185,4 +183,3 @@ if __name__ == '__main__':
     print('-------------------------------------------------')
     print(ADDRE.get_formatted_page_results(1094))
     print('-------------------------------------------------')
-
