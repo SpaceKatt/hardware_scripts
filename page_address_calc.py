@@ -1,9 +1,10 @@
 '''
 Defines an page address calculator to be used to verify homework questions
 in my hardware class.
+
+Unit tests are distributed in the git repo, spacekatt/hardware_scripts
 '''
-        # TODO: add to discord bot
-        # TODO: add testing framework
+
 class AddressParser(object):
     '''
     Calculates the addresses for the beginning and end of pages given
@@ -74,9 +75,8 @@ class AddressParser(object):
         if is_start:
             # The start of page has all offset and byte-selector bits at zero
             return '0' * remaining_bits
-        else:
-            # The end has all offset and b-s bits at one
-            return '1' * remaining_bits
+        # The end has all offset and b-s bits at one
+        return '1' * remaining_bits
 
     def get_address(self, page_num, is_start):
         '''
@@ -106,8 +106,8 @@ class AddressParser(object):
         if not self.is_valid_page(page_num):
             return "Invalid page number"
         result = []
-        result[0] = self.get_address(page_num, True)
-        result[1] = self.get_address(page_num, False)
+        result.append(self.get_address(page_num, True))
+        result.append(self.get_address(page_num, False))
         return result
 
     def get_formatted_page_results(self, page_num):
@@ -125,39 +125,37 @@ class AddressParser(object):
         result += "End:   " + page_addresses[1]
         return result
 
-# if __name__ == '__main__':
-    # ADDRE = AddressParser(4, 13, 0)
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(0))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(1))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(7))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(15))
-    # print('-------------------------------------------------')
+if __name__ == '__main__':
+    ADDRE = AddressParser(4, 13, 0)
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(0))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(1))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(7))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(15))
+    print('-------------------------------------------------')
 
-    # ADDRE = AddressParser(11, 17, 2)
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(0))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(17))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(381))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(1024))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(1094))
-    # print('-------------------------------------------------')
-    # ADDRE = AddressParser(13, 17, 0)
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(0))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(17))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(381))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(1024))
-    # print('-------------------------------------------------')
-    # print(ADDRE.get_formatted_page_results(1094))
-    # print('-------------------------------------------------')
+    ADDRE = AddressParser(11, 17, 2)
+    print(ADDRE.get_formatted_page_results(0))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(17))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(381))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(1024))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(1094))
+    print('-------------------------------------------------')
+    ADDRE = AddressParser(13, 17, 0)
+    print(ADDRE.get_formatted_page_results(0))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(17))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(381))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(1024))
+    print('-------------------------------------------------')
+    print(ADDRE.get_formatted_page_results(1094))
+    print('-------------------------------------------------')
