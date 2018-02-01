@@ -1,5 +1,6 @@
         # TODO: complete documentation
-class BooleanExpr:
+        # TODO: add testing framework
+class BooleanExpr(object):
     '''
     '''
     # Expression with whitespace stripped

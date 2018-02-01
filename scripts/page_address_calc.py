@@ -2,7 +2,8 @@
 Defines an page address calculator to be used to verify homework questions
 in my hardware class.
 
-Unit tests are distributed in the git repo, spacekatt/hardware_scripts
+Unit tests are distributed in,
+    https://github.com/SpaceKatt/hardware_scripts
 '''
 
 class AddressParser(object):
@@ -17,7 +18,7 @@ class AddressParser(object):
     with 3 paging bits, 4 offset bits, and 5 byte-selector bits, we
     would do the following:
     >>> addy = AddressParser(3, 4, 5)
-    >>> print(addy.get_start_end(7)
+    >>> print(addy.get_start_end(7))
     '''
     # The number of page bits
     page_bits = 0
@@ -75,7 +76,7 @@ class AddressParser(object):
         if is_start:
             # The start of page has all offset and byte-selector bits at zero
             return '0' * remaining_bits
-        # The end has all offset and b-s bits at one
+        # Else, the end has all offset and b-s bits at one
         return '1' * remaining_bits
 
     def get_address(self, page_num, is_start):
@@ -87,7 +88,6 @@ class AddressParser(object):
         page = "{0:b}".format(page_num)
         # Get the offset and byte-selector bits
         offset_byte_sel = self.get_ending(is_start)
-        # The complete address, in binary
         address = page + offset_byte_sel
         # Return the absolute hex address
         return self.to_hex(address)
@@ -106,7 +106,9 @@ class AddressParser(object):
         if not self.is_valid_page(page_num):
             return "Invalid page number"
         result = []
+        # Get the start address
         result.append(self.get_address(page_num, True))
+        # Get the end address
         result.append(self.get_address(page_num, False))
         return result
 
@@ -119,11 +121,16 @@ class AddressParser(object):
         page_addresses = self.get_start_end(page_num)
         result = "Chip summary:\n"
         result += "Page bits: {}, Offset bits: {}, Byte-select bits: {}\n"
-        result = result.format(self.page_bits, self.offs_bits, self.byte_bits)
+        result = result.format(self.page_bits,
+                               self.offs_bits,
+                               self.byte_bits)
         result += "Addresses for page number {}:\n".format(page_num)
         result += "Start: " + page_addresses[0] + '\n'
         result += "End:   " + page_addresses[1]
         return result
+
+
+print(__name__)
 
 if __name__ == '__main__':
     ADDRE = AddressParser(4, 13, 0)
@@ -148,6 +155,7 @@ if __name__ == '__main__':
     print('-------------------------------------------------')
     print(ADDRE.get_formatted_page_results(1094))
     print('-------------------------------------------------')
+
     ADDRE = AddressParser(13, 17, 0)
     print(ADDRE.get_formatted_page_results(0))
     print('-------------------------------------------------')
@@ -159,3 +167,4 @@ if __name__ == '__main__':
     print('-------------------------------------------------')
     print(ADDRE.get_formatted_page_results(1094))
     print('-------------------------------------------------')
+
