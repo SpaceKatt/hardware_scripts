@@ -17,10 +17,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -------------------------------------------------------------------------------
 '''
-        # TODO: complete documentation
         # TODO: add testing framework
+        # TODO: restructure to generate solution matrix (help test)
+        # TODO: generate formatted result from solution matrix
 class BooleanExpr(object):
     '''
+    Class to parse boolean expressions and generate truth tables from them.
+    Currently does not parse expressions of more than 6 variables
+    (as on 1/Feb), due to its initial pupose of being a utility for a
+    discord bot. This will probably change after some refactoring.
+
+    From an expression, we translate it into postfix. This translation
+    uses the shunting yard algorithm. After we have the postfix
+    expression we cycle through every combination of inputs (2^n for n
+    variables). The results are stored in a 2D-array, which then
+    can be processed into a formatted form for display. The reason we
+    need the intermediate 2D-array is because we need a way to write
+    automated tests that doesn't depend on the formatted results.
     '''
     # Expression with whitespace stripped
     orig_exp = "empty"
@@ -81,7 +94,8 @@ class BooleanExpr(object):
         self.orig_exp = self.orig_exp.replace('~~', '')
         self.orig_exp = self.orig_exp.replace('~!', '')
         self.orig_exp = self.orig_exp.replace('!~', '')
-
+        # Take care of `!~~!` edge case, maybe there's more?
+        self.orig_exp = self.orig_exp.replace('!!', '')
 
     ######################################################################
     ####### Parse in-fix expression into post-fix ########################
@@ -94,7 +108,6 @@ class BooleanExpr(object):
         is easier to evaluate in code and makes creating the truth
         table more efficient.
         """
-        # TODO: Split up branching into functions
         self.post_exp = ""
         # Step through chars of booelean expression
         for char in exp:
@@ -112,16 +125,9 @@ class BooleanExpr(object):
                 self.op_stack.append(char)
             # End parens
             elif char == ')':
-                # Process all operators until start paren
-                while get_top(self.op_stack) != '(':
-                    self.process_an_op()
-                    if get_top(self.op_stack) == -1:
-                        self.error = True
-                        self.error_msg = "Unbalanced paren: )"
-                        return
-                # Pop start paren
-                if self.op_stack:
-                    self.op_stack.pop()
+                # Return if error processing parenthesis
+                if not self.process_parenthesis():
+                    return
             # If the char is a valid operator then process it
             elif self.is_valid_op(char):
                 self.process_char(char)
@@ -137,6 +143,22 @@ class BooleanExpr(object):
                 self.error = True
                 self.error_msg = "Unbalanced paren: ("
             self.process_an_op()
+
+    def process_parenthesis(self):
+        '''
+        Processes all operators that occurs before a `)` parenthesis
+        Stops once it hits a `(`, else results in error and returns False
+        '''
+        while get_top(self.op_stack) != '(':
+            self.process_an_op()
+            if get_top(self.op_stack) == -1:
+                self.error = True
+                self.error_msg = "Unbalanced paren: )"
+                return False
+        # Pop start paren
+        if self.op_stack:
+            self.op_stack.pop()
+        return True
 
     def is_valid_op(self, char):
         '''True if char is a valid boolean operator'''
@@ -154,6 +176,9 @@ class BooleanExpr(object):
 
     def process_an_op(self):
         '''
+        Processes a single operator. Adds thise operator to the postfix
+        expression and modify the variable stack accordingly.
+        Checks for errors dealing with the size of these stacks.
         '''
         # I don't know if this would happen...
         if not self.op_stack:
@@ -161,11 +186,11 @@ class BooleanExpr(object):
             self.error_msg = "Op stack is empty while trying to process op"
             return
         # Add operator to postfix expression
-        temp = get_top(self.op_stack)
+        operator = get_top(self.op_stack)
+        self.post_exp += operator
         self.op_stack.pop()
-        self.post_exp += temp
         # If the operator is unary, then there will be no change in var_stack
-        if temp != '!' and temp != '~':
+        if operator != '!' and operator != '~':
             if len(self.var_stack) < 2:
                 self.error = True
                 self.error_msg = "Too many operators!"
