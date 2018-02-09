@@ -216,22 +216,40 @@ class BooleanExpr(object):
         for elem in self.var_set:
             var_list.append(elem)
         var_list.sort()
-        var_num = 0
         # This dictionary will keep track of the value of each variable
-        var_dict = {}
         self.format_header(var_list)
 
-        # Begin recursion
-        var_dict[var_list[var_num]] = False
-        self.recurse_through_var(var_list, var_dict, var_num + 1)
-        var_dict[var_list[var_num]] = True
-        self.recurse_through_var(var_list, var_dict, var_num + 1)
+        bool_results = self.generate_table_values(var_list)
+        # print(bool_results)
+
+        for result in bool_results:
+            # Save result in a formatted fashion, will be single line in table
+            self.format_result(result)
 
         # Add bottom line of formatted result
         self.result_formatted += "+" + "---+" * len(var_list)
         self.result_formatted += "-" * len(self.disp_exp) + "--+\n"
 
-    def recurse_through_var(self, var_list, var_dict, depth):
+    def generate_table_values(self, var_list):
+        '''
+        Returns a list of lists which holds the information necessary
+        to poplulate the final formatted truth table. Each list
+        conatins the values of each variable, in order, and is terminated
+        with the truth value of the final expression.
+        '''
+        results = []
+        var_dict = {}
+        var_num = 0
+
+        # Begin recursion
+        var_dict[var_list[var_num]] = False
+        self.recurse_through_var(var_list, var_dict, var_num + 1, results)
+        var_dict[var_list[var_num]] = True
+        self.recurse_through_var(var_list, var_dict, var_num + 1, results)
+
+        return results
+
+    def recurse_through_var(self, var_list, var_dict, depth, results):
         '''
         Recurse until every variable has been set to True or False, then
         once the recursion depth is equal to the number of variables
@@ -240,13 +258,18 @@ class BooleanExpr(object):
         '''
         if depth >= len(self.var_set):
             # Process expression for a single permutation of input
-            self.process_single_exp(var_dict, var_list)
+            result = []
+            for var in var_list:
+                result.append(var_dict[var])
+            result.append(self.process_single_exp(var_dict, var_list))
+            # Add to collection of results
+            results.append(result)
         else:
             # Continue recursion
             var_dict[var_list[depth]] = False
-            self.recurse_through_var(var_list, var_dict, depth + 1)
+            self.recurse_through_var(var_list, var_dict, depth + 1, results)
             var_dict[var_list[depth]] = True
-            self.recurse_through_var(var_list, var_dict, depth + 1)
+            self.recurse_through_var(var_list, var_dict, depth + 1, results)
 
     def process_single_exp(self, dict_bool, var_list):
         '''
@@ -278,8 +301,7 @@ class BooleanExpr(object):
                     two = post_stack.pop()
                     result = bool(one) ^ bool(two)
                     post_stack.append(result)
-        # Save result in a formatted fashion, will be single line in table
-        self.format_result(post_stack.pop(), dict_bool, var_list)
+        return post_stack.pop()
 
     def format_header(self, var_list):
         '''Creates the header to the truth table'''
@@ -291,12 +313,11 @@ class BooleanExpr(object):
         self.result_formatted += "+---" * len(var_list)
         self.result_formatted += "+" + "-" * len(self.disp_exp) + "--+\n"
 
-    def format_result(self, result, dict_bool, var_list):
+    def format_result(self, result):
         '''Creates single line in the truth table'''
-        for var in var_list:
-            booly = int(dict_bool[var])
-            self.result_formatted += "| {} ".format(booly)
-        res = int(result)
+        for char in result[:-1]:
+            self.result_formatted += "| {} ".format(int(char))
+        res = int(result[-1])
         self.result_formatted += "| {}".format(res)
         self.result_formatted += " " * len(self.disp_exp) + "|\n"
 
