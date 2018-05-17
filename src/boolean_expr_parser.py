@@ -230,6 +230,12 @@ class BooleanExpr(object):
         self.result_formatted += "+" + "---+" * len(var_list)
         self.result_formatted += "-" * len(self.disp_exp) + "--+\n"
 
+    def get_results_for_testing(self):
+        '''
+        CONTINUE FROM HERE
+        '''
+        pass
+
     def generate_table_values(self, var_list):
         '''
         Returns a list of lists which holds the information necessary

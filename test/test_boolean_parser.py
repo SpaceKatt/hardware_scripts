@@ -18,19 +18,36 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -------------------------------------------------------------------------------
 '''
 
-from hardware_scripts.src.page_address_calc import AddressParser as ap
+from ..src.boolean_expr_parser import BooleanExpr as be
 
-def test_page_0():
-    '''a'''
-    addy = ap(4, 4, 0)
-    address = addy.get_start_end(0)
-    assert address[0] == '0x00'
-    assert address[1] == '0x0F'
+def result_equality(unknown, known):
+    '''
+    Returns true if two 2D lists are equal.
+    '''
+    if (len(unknown) != len(known) or len(unknown[0]) != len(known[0])):
+        return False
+    for i in range(len(unknown)):
+        for j in range(len(unknown[0])):
+            if unknown[i][j] != known[i][j]:
+                return False
+    return True
 
-def test_page_1():
-    '''ITS NOT EMPTY'''
-    assert True
 
+def test_not():
+    '''Tests the boolean function NOT'''
+    known = [[0, 1],
+             [1, 0]]
+    booly = be("!A")
+    assert result_equality(booly.generate_table_values(['A']), known)
 
-if __name__ == '__main__':
-    print('Success')
+def test_or():
+    '''Tests the boolean function OR'''
+    pass
+
+def test_xor():
+    '''Tests the boolean function XOR'''
+    pass
+
+def test_and():
+    '''Tests the boolean function AND'''
+    pass
