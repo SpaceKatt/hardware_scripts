@@ -31,12 +31,13 @@ class Frame():
     A reference bit is set to signal that a frame was recently referenced, and
       cleared once it hasn't been referenced recently
 
-    A dirty bit is set when 
+    A dirty bit is set when
     '''
-    def __init__(self, frame_number=0):
+    def __init__(self, frame_number=0, short_string=False):
         self.reference_bit = True
         self.dirty_bit = False
         self.frame_number = frame_number
+        self.short_string = short_string
 
     def getFrameNum(self):
         return self.frame_number
@@ -60,38 +61,59 @@ class Frame():
         self.reference_bit = True
 
     def __repr__(self):
-        string_repr = "[" + str(self.getFrameNum()) + ", " \
-                                + str(int(self.getRefBit())) + "]"
+        if self.short_string:
+            string_repr = "[{}]".format(self.getFrameNum())
+        else:
+            string_repr = "[{}, {}, {}]".format(self.getFrameNum(),
+                                                int(self.getRefBit()),
+                                                int(self.getDirtyBit()))
         return string_repr
 
 class Clock():
-    def __init__(self, frames, debug=False):
+    def __init__(self, frames, debug=False, terse_output=False):
+        self.formatted_table = ''
+        self.terse_output = terse_output
         self.pointer = 0
         self.frame_list = []
         self.debug = debug
-        for x in range(frames):
-            self.frame_list.append(Frame())
-        if self.debug:
-            self.print_frames()
+        self.number_of_pages = frames
+        for _ in range(self.number_of_pages):
+            self.frame_list.append(Frame(short_string=terse_output))
+        # if self.debug:
+            # self.print_frames()
 
     def print_frames(self):
+        print("{} ".format(self.get_table_string(), end=""))
+
+    def get_table_string(self):
+        frame_table = ''
+        if self.number_of_pages < 1:
+            frame_table = 'No table!!!'
+            return
         for i in range(len(self.frame_list)):
-            frame = self.frame_list[i]
-            print("{} ".format(frame), end="")
+            frame_table += "{} ".format(self.frame_list[i])
+        return frame_table
+
+    def evolve_formatted_table(self, message):
+        self.formatted_table += "{} --- {}\n".format(self.get_table_string(),
+                                                   message)
+
+    def get_whole_table(self):
+        return self.formatted_table
 
     def do_thing(self, page_string):
+        self.evolve_formatted_table('Cold start cache')
         for char in page_string:
             frame_num = int(char)
             if self.hasFrame(frame_num):
-                if self.debug:
-                    print(3 * '-' + " Found frame in table: " + str(frame_num))
+                mess = "Found frame in table: {}".format(frame_num)
+                self.evolve_formatted_table(mess)
             else:
                 self.replaceFrame(frame_num)
-            if self.debug:
-                self.print_frames()
-        if self.debug:
-            print(3 * '_' + ' FINISHED!!!')
-        return self.frame_list
+            # if self.debug:
+                # self.print_frames()
+        self.evolve_formatted_table(' FINISHED!!!')
+        return self.get_whole_table()
 
     def hasFrame(self, frame_num):
         for frame in self.frame_list:
@@ -103,10 +125,10 @@ class Clock():
         while self.frame_list[self.pointer].getRefBit():
             self.frame_list[self.pointer].clearRefBit()
             self.pointer = (self.pointer + 1) % len(self.frame_list)
-        self.frame_list[self.pointer] = Frame(frame_num)
-        if self.debug:
-            print(3 * '-' + " Replace index " + str(self.pointer) \
-                        + " with frame " + str(frame_num))
+        self.frame_list[self.pointer] = Frame(frame_num, short_string=self.terse_output)
+        message = "Replace index {} with frame {}".format(self.pointer,
+                                                          frame_num)
+        self.evolve_formatted_table(message)
         self.pointer = (self.pointer + 1) % len(self.frame_list)
 
 if __name__ == '__main__':
@@ -116,4 +138,7 @@ if __name__ == '__main__':
     INST.do_thing(PAGE_STRING)
 
     INST = Clock(3)
+    print(INST.do_thing(PAGE_STRING))
+
+    INST = Clock(3, terse_output=True)
     print(INST.do_thing(PAGE_STRING))
