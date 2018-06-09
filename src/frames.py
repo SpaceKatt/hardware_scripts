@@ -21,6 +21,7 @@ This script generates the evolution of a page table, given separate victim
   selection algorithms (FIFO, Second Chance, Enhanced Second Chance).
 '''
 
+
 class Frame():
     '''
     Represents a physical frame in memory. A frame has a number associated
@@ -33,54 +34,73 @@ class Frame():
 
     A dirty bit is set when
     '''
-    def __init__(self, frame_number=0, short_string=False):
-        self.reference_bit = True
+    def __init__(self, frame_number=-1, short_string=False):
+        if frame_number == -1:
+            self.reference_bit = False
+        else:
+            self.reference_bit = True
         self.dirty_bit = False
         self.frame_number = frame_number
         self.short_string = short_string
 
-    def getFrameNum(self):
+    def get_frame_num(self):
+        '''Get the physical frame number'''
         return self.frame_number
 
-    def getRefBit(self):
+    def get_ref_bit(self):
+        '''Read reference bit'''
         return self.reference_bit
 
-    def getDirtyBit(self):
+    def get_dirty_git(self):
+        '''Read dirty bit'''
         return self.dirty_bit
 
-    def clearDirtyBit(self):
+    def clear_dirty_bit(self):
+        '''Indicates that page has been written back to disk.'''
         self.dirty_bit = False
 
-    def setDirtyBit(self):
+    def set_dirty_bit(self):
+        '''
+        Page has been modified and nees to be written back to disk.
+        '''
         self.dirty_bit = True
 
-    def clearRefBit(self):
+    def clear_ref_bit(self):
+        '''
+        Page has been set as a replacement candidate.
+        '''
         self.reference_bit = False
 
-    def setRefBit(self):
+    def set_ref_bit(self):
+        '''
+        Page has been recently referenced.
+        '''
         self.reference_bit = True
 
     def __repr__(self):
-        if self.short_string:
-            string_repr = "[{}]".format(self.getFrameNum())
+        if self.get_frame_num() == -1:
+            number = '--'
         else:
-            string_repr = "[{}, {}, {}]".format(self.getFrameNum(),
-                                                int(self.getRefBit()),
-                                                int(self.getDirtyBit()))
+            number = self.get_frame_num()
+        if self.short_string:
+            string_repr = "[{0:0>2}]".format(number)
+        else:
+            string_repr = "[{0:0>2}, {1}, {2}]"
+            string_repr = string_repr.format(number, int(self.get_ref_bit()),
+                                             int(self.get_dirty_git()))
         return string_repr
 
-class Clock():
-    def __init__(self, frames, debug=False, terse_output=False):
+
+class PageTable():
+    def __init__(self, frames, terse_output=False):
         self.formatted_table = ''
         self.terse_output = terse_output
         self.pointer = 0
         self.frame_list = []
-        self.debug = debug
         self.number_of_pages = frames
+        self.page_array = []
         for _ in range(self.number_of_pages):
             self.frame_list.append(Frame(short_string=terse_output))
-        # if self.debug:
-            # self.print_frames()
 
     def print_frames(self):
         print("{} ".format(self.get_table_string(), end=""))
@@ -92,53 +112,69 @@ class Clock():
             return
         for i in range(len(self.frame_list)):
             frame_table += "{} ".format(self.frame_list[i])
-        return frame_table
+        return frame_table[:-1]
 
     def evolve_formatted_table(self, message):
         self.formatted_table += "{} --- {}\n".format(self.get_table_string(),
-                                                   message)
+                                                     message)
 
     def get_whole_table(self):
         return self.formatted_table
 
-    def do_thing(self, page_string):
+    def parse_page_string(self, page_string):
+        self.page_array = page_string.split(',')
+        for element in self.page_array:
+            try:
+                int(element)
+            except ValueError:
+                raise ValueError('Frame numbers can only be integers... '
+                                 + ' Try again, you idiot n___n')
+            if int(element) > 99 or int(element) < 0:
+                raise ValueError('Frames must be between 0 and 99, inclusive')
+
+    def second_chance(self, page_string):
+        self.parse_page_string(page_string)
         self.evolve_formatted_table('Cold start cache')
-        for char in page_string:
+        for char in self.page_array:
             frame_num = int(char)
-            if self.hasFrame(frame_num):
+            if self.has_frame(frame_num):
                 mess = "Found frame in table: {}".format(frame_num)
                 self.evolve_formatted_table(mess)
             else:
-                self.replaceFrame(frame_num)
-            # if self.debug:
-                # self.print_frames()
+                self.replace_frame_second_chance(frame_num)
         self.evolve_formatted_table(' FINISHED!!!')
         return self.get_whole_table()
 
-    def hasFrame(self, frame_num):
+    def has_frame(self, frame_num):
         for frame in self.frame_list:
-            if frame.getFrameNum() == frame_num:
+            if frame.get_frame_num() == frame_num:
                 return True
         return False
 
-    def replaceFrame(self, frame_num):
-        while self.frame_list[self.pointer].getRefBit():
-            self.frame_list[self.pointer].clearRefBit()
+    def replace_frame_second_chance(self, frame_num):
+        while self.frame_list[self.pointer].get_ref_bit():
+            self.frame_list[self.pointer].clear_ref_bit()
             self.pointer = (self.pointer + 1) % len(self.frame_list)
-        self.frame_list[self.pointer] = Frame(frame_num, short_string=self.terse_output)
+        self.frame_list[self.pointer] = Frame(frame_num,
+                                              short_string=self.terse_output)
         message = "Replace index {} with frame {}".format(self.pointer,
                                                           frame_num)
         self.evolve_formatted_table(message)
         self.pointer = (self.pointer + 1) % len(self.frame_list)
 
+
 if __name__ == '__main__':
-    INST = Clock(3, True)
+    INST = PageTable(3, True)
 
-    PAGE_STRING = '68691418328914'
-    INST.do_thing(PAGE_STRING)
+    PAGE_STRING = '6,8,6,2,1,4,1,8,3,2,8,9,1,4'
+    INST.second_chance(PAGE_STRING)
 
-    INST = Clock(3)
-    print(INST.do_thing(PAGE_STRING))
+    INST = PageTable(3)
+    print(INST.second_chance(PAGE_STRING))
 
-    INST = Clock(3, terse_output=True)
-    print(INST.do_thing(PAGE_STRING))
+    INST = PageTable(3, terse_output=True)
+    print(INST.second_chance(PAGE_STRING))
+
+    INST = PageTable(3, terse_output=True)
+    PAGE_STRING = '3,5,7,3,3,6,7,3,5,4,6,7,5'
+    print(INST.second_chance(PAGE_STRING))
